@@ -7,6 +7,11 @@ jobs:
   build:
     runs-on: macos-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ios] #, simulator, macos]
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,12 +22,55 @@ jobs:
       - name: List available SDKs
         run: xcodebuild -showsdks
 
-      - name: Build xcframework
-        run: ./scripts/build_opencv_xcframework.sh
+      - name: Build framework
+        run: |
+          ./scripts/_prepare_build.sh
+
+          FRAMEWORK_OUT="build/${{ matrix.platform }}"
+          mkdir -p $FRAMEWORK_OUT
+
+          if [ "${{ matrix.platform }}" = "ios" ]; then
+            python3 platforms/ios/build_framework.py --out $FRAMEWORK_OUT \
+                --contrib "$CONTRIB_DIR" \
+                --iphoneos_deployment_target 13.0 \
+                --iphoneos_archs arm64 \
+                --build_only_specified_archs \
+                --without objc
+          elif [ "${{ matrix.platform }}" = "simulator" ]; then
+            DEST="generic/platform=iOS Simulator"
+          else
+            DEST="generic/platform=macOS"
+          fi
+
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: framework-${{ matrix.platform }}
+          path: build/${{ matrix.platform }}
+
+  aggregate:
+    runs-on: macos-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: build
+
+      - name: Create XCFramework
+        run: |
+          ls -R build
+          xcodebuild -create-xcframework \
+            -framework build/ios/opencv2.framework \
+            -output opencv2.xcframework
 
       - name: Zip xcframework
         run: |
-          zip -r opencv2.xcframework.zip build_xcframework/opencv2.xcframework
+          zip -r opencv2.xcframework.zip opencv2.xcframework
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
