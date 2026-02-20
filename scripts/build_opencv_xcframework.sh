@@ -36,7 +36,6 @@ python3 platforms/apple/build_xcframework.py --out $XCFRAMEWORK_OUT_DIR \
 --macosx_deployment_target 10.15 \
 --macos_archs arm64,x86_64 \
 --build_only_specified_archs \
---disable-bitcode \
 --without objc
 
 ls -R $XCFRAMEWORK_OUT_DIR

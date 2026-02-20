@@ -19,3 +19,12 @@ jobs:
 
       - name: Build xcframework
         run: ./scripts/build_opencv_xcframework.sh
+
+      - name: Zip xcframework
+        run: |
+          zip -r opencv2.xcframework.zip build_xcframework/opencv2.xcframework
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: opencv2.xcframework.zip
