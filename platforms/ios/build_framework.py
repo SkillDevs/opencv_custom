@@ -140,6 +140,12 @@ class Builder:
                 cmake_flags.append("-DCMAKE_CXX_COMPILER_WORKS=TRUE")
                 cmake_flags.append("-DCMAKE_C_COMPILER_WORKS=TRUE")
 
+            ##### CUSTOM FLAGS #####
+
+            cmake_flags.append("-DWITH_AVIF=OFF")
+
+            ##### CUSTOM FLAGS END #####
+
             print("::group::Building target", target[0], target[1], flush=True)
             self.buildOne(target[0], target[1], main_build_dir, cmake_flags)
             print("::endgroup::", flush=True)

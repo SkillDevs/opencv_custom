@@ -17,15 +17,5 @@ jobs:
       - name: List available SDKs
         run: xcodebuild -showsdks
 
-    #   - name: Build macOS framework
-    #     run: |
-    #       xcodebuild \
-    #         -project MyProject.xcodeproj \
-    #         -scheme MyFramework \
-    #         -configuration Release \
-    #         -sdk macosx \
-    #         -arch arm64 \
-    #         -arch x86_64 \
-    #         BUILD_DIR=build \
-    #         BUILD_ROOT=build \
-    #         clean build
+      - name: Build xcframework
+        run: ./scripts/build_opencv_xcframework.sh
