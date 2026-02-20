@@ -38,4 +38,4 @@ python3 platforms/apple/build_xcframework.py --out $XCFRAMEWORK_OUT_DIR \
 --build_only_specified_archs \
 --without objc
 
-ls -R $XCFRAMEWORK_OUT_DIR
+echo "Built to $XCFRAMEWORK_OUT_DIR"
