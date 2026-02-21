@@ -50,13 +50,12 @@ jobs:
               uses: actions/download-artifact@v4
               with:
                   name: opencv_contrib
+                  path: opencv_contrib
 
             - name: Build framework
               run: |
                   export FRAMEWORK_OUT="build/${{ matrix.platform }}"
-                  export CONTRIB_DIR="opencv_contrib-${{env.OPENCV_VERSION}}"
-
-                  ls -lR
+                  export CONTRIB_DIR="opencv_contrib"
 
                   if [ ! -d "$CONTRIB_DIR" ]; then
                     echo "Error: Contrib directory $CONTRIB_DIR not found"
