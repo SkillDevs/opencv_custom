@@ -32,7 +32,7 @@ jobs:
         runs-on: macos-latest
 
         env:
-            CONTRIB_DIR: "opencv_contrib-${{ env.OPENCV_VERSION }}"
+            CONTRIB_DIR: "opencv_contrib-$OPENCV_VERSION"
 
         strategy:
             fail-fast: true
@@ -56,7 +56,7 @@ jobs:
                   path: .
 
             - name: Show contents
-              run: ls -R ${{env.CONTRIB_DIR}}
+              run: ls -R $CONTRIB_DIR
 
             - name: Build framework
               run: |
