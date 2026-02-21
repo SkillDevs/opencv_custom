@@ -31,6 +31,9 @@ jobs:
 
         runs-on: macos-latest
 
+        env:
+            CONTRIB_DIR: "opencv_contrib-${{ env.OPENCV_VERSION }}"
+
         strategy:
             fail-fast: true
             matrix:
@@ -53,10 +56,9 @@ jobs:
                   path: .
 
             - name: Show contents
-              run: ls -R opencv_contrib
+              run: ls -R ${{env.CONTRIB_DIR}}
 
             - name: Setup contrib dir
-              run: echo "CONTRIB_DIR=opencv_contrib" >> $GITHUB_ENV
 
             - name: Build framework
               run: |
