@@ -56,7 +56,7 @@ jobs:
                   export FRAMEWORK_OUT="build/${{ matrix.platform }}"
                   export CONTRIB_DIR="opencv_contrib-${{env.OPENCV_VERSION}}"
 
-                  ls -R $CONTRIB_DIR
+                  ls -R
 
                   mkdir -p $FRAMEWORK_OUT
 
