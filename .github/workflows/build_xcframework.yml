@@ -1,80 +1,101 @@
 name: Build XCFramework
 
 on:
-  workflow_dispatch:
+    workflow_dispatch:
+
+env:
+    OPENCV_VERSION: 4.13.0
 
 jobs:
-  build:
-    runs-on: macos-latest
+    prepare:
+        runs-on: ubuntu-latest
 
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [ios] #, simulator, macos]
+        steps:
+            - name: Prepare build
+              run: ./scripts/ci/_prepare_build.sh
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+            - name: Upload contrib
+              uses: actions/upload-artifact@v4
+              with:
+                  name: opencv_contrib
+                  path: opencv_contrib-${{ env.OPENCV_VERSION }}
 
-      - name: Show Xcode version
-        run: xcodebuild -version
+    build:
+        runs-on: macos-latest
 
-      - name: List available SDKs
-        run: xcodebuild -showsdks
+        strategy:
+            fail-fast: true
+            matrix:
+                platform: [ios, simulator, macos]
 
-      - name: Build framework
-        run: |
-          ./scripts/_prepare_build.sh
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-          FRAMEWORK_OUT="build/${{ matrix.platform }}"
-          mkdir -p $FRAMEWORK_OUT
+            - name: Show Xcode version
+              run: xcodebuild -version
 
-          if [ "${{ matrix.platform }}" = "ios" ]; then
-            python3 platforms/ios/build_framework.py --out $FRAMEWORK_OUT \
-                --contrib "$CONTRIB_DIR" \
-                --iphoneos_deployment_target 13.0 \
-                --iphoneos_archs arm64 \
-                --build_only_specified_archs \
-                --without objc
-          elif [ "${{ matrix.platform }}" = "simulator" ]; then
-            DEST="generic/platform=iOS Simulator"
-          else
-            DEST="generic/platform=macOS"
-          fi
+            - name: List available SDKs
+              run: xcodebuild -showsdks
 
+            - name: Download contrib
+              uses: actions/download-artifact@v4
+              with:
+                  name: opencv_contrib
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: framework-${{ matrix.platform }}
-          path: build/${{ matrix.platform }}
+            - name: Setup contrib dir
+              run: echo "CONTRIB_DIR=opencv_contrib" >> $GITHUB_ENV
 
-  aggregate:
-    runs-on: macos-latest
-    needs: build
+            - name: Build framework
+              run: |
+                  export FRAMEWORK_OUT="build/${{ matrix.platform }}"
+                  mkdir -p $FRAMEWORK_OUT
 
-    steps:
-      - uses: actions/checkout@v4
+                  if [ "${{ matrix.platform }}" = "ios" ]; then
+                    ./scripts/ci/build_ios_framework.sh
+                  elif [ "${{ matrix.platform }}" = "simulator" ]; then
+                    ./scripts/ci/build_ios_simulator_framework.sh
+                  elif [ "${{ matrix.platform }}" = "macos" ]; then
+                    ./scripts/ci/build_macos_framework.sh
+                  else
+                    echo "Unsupported platform: ${{ matrix.platform }}"
+                    exit 1
+                  fi
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: build
+            - name: Upload framework
+              uses: actions/upload-artifact@v4
+              with:
+                  name: framework-${{ matrix.platform }}
+                  path: build/${{ matrix.platform }}
 
-      - name: Create XCFramework
-        run: |
-          ls -R build
-          xcodebuild -create-xcframework \
-            -framework build/framework-ios/opencv2.framework \
-            -output opencv2.xcframework
+    aggregate:
+        runs-on: macos-latest
+        needs: build
 
-      - name: Zip xcframework
-        run: |
-          zip -r opencv2.xcframework.zip opencv2.xcframework
+        steps:
+            - uses: actions/checkout@v4
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: opencv-latest
-          name: OpenCV XCFramework
-          files: opencv2.xcframework.zip
+            - name: Download all artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  path: build
+
+            - name: Create XCFramework
+              run: |
+                  ls -R build
+                  xcodebuild -create-xcframework \
+                    -framework build/framework-ios/opencv2.framework \
+                    -framework build/framework-simulator/opencv2.framework \
+                    -framework build/framework-macos/opencv2.framework \
+                    -output opencv2.xcframework
+
+            - name: Zip xcframework
+              run: |
+                  zip -r opencv2_xcframework.zip opencv2.xcframework
+
+            - name: Create Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  tag_name: opencv-${{ env.OPENCV_VERSION }}
+                  name: OpenCV XCFramework
+                  files: opencv2_xcframework.zip
