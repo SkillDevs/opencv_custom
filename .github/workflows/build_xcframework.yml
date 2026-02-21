@@ -56,7 +56,12 @@ jobs:
                   export FRAMEWORK_OUT="build/${{ matrix.platform }}"
                   export CONTRIB_DIR="opencv_contrib-${{env.OPENCV_VERSION}}"
 
-                  ls -R
+                  ls -lR
+
+                  if [ ! -d "$CONTRIB_DIR" ]; then
+                    echo "Error: Contrib directory $CONTRIB_DIR not found"
+                    exit 1
+                  fi
 
                   mkdir -p $FRAMEWORK_OUT
 
