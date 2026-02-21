@@ -27,6 +27,8 @@ jobs:
                   path: opencv_contrib-${{ env.OPENCV_VERSION }}
 
     build:
+        needs: prepare
+
         runs-on: macos-latest
 
         strategy:
