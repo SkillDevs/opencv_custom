@@ -65,7 +65,7 @@ jobs:
         run: |
           ls -R build
           xcodebuild -create-xcframework \
-            -framework build/framework -ios/opencv2.framework \
+            -framework build/framework-ios/opencv2.framework \
             -output opencv2.xcframework
 
       - name: Zip xcframework
