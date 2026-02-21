@@ -11,6 +11,12 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
+            - uses: actions/checkout@v6
+              with:
+                sparse-checkout: |
+                    scripts/ci/_prepare_build.sh
+                sparse-checkout-cone-mode: false
+
             - name: Prepare build
               run: ./scripts/ci/_prepare_build.sh
 
