@@ -50,6 +50,10 @@ jobs:
               uses: actions/download-artifact@v4
               with:
                   name: opencv_contrib
+                  path: .
+
+            - name: Show contents
+              run: ls -R opencv_contrib
 
             - name: Setup contrib dir
               run: echo "CONTRIB_DIR=opencv_contrib" >> $GITHUB_ENV
