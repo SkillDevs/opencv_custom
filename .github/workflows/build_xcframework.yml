@@ -58,8 +58,6 @@ jobs:
             - name: Show contents
               run: ls -R ${{env.CONTRIB_DIR}}
 
-            - name: Setup contrib dir
-
             - name: Build framework
               run: |
                   export FRAMEWORK_OUT="build/${{ matrix.platform }}"
