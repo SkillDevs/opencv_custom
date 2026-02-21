@@ -95,7 +95,6 @@ jobs:
 
             - name: Create XCFramework
               run: |
-                  ls -R build
                   xcodebuild -create-xcframework \
                     -framework build/framework-ios/opencv2.framework \
                     -framework build/framework-simulator/opencv2.framework \
@@ -104,7 +103,7 @@ jobs:
 
             - name: Zip xcframework
               run: |
-                  zip -r opencv2_xcframework.zip opencv2.xcframework
+                  zip -q -r opencv2_xcframework.zip opencv2.xcframework
 
             - name: Create Release
               uses: softprops/action-gh-release@v2
