@@ -31,9 +31,6 @@ jobs:
 
         runs-on: macos-latest
 
-        env:
-            CONTRIB_DIR: "opencv_contrib-$OPENCV_VERSION"
-
         strategy:
             fail-fast: true
             matrix:
@@ -53,14 +50,14 @@ jobs:
               uses: actions/download-artifact@v4
               with:
                   name: opencv_contrib
-                  path: .
-
-            - name: Show contents
-              run: ls -R $CONTRIB_DIR
 
             - name: Build framework
               run: |
                   export FRAMEWORK_OUT="build/${{ matrix.platform }}"
+                  export CONTRIB_DIR="opencv_contrib-${{env.OPENCV_VERSION}}"
+
+                  ls -R $CONTRIB_DIR
+
                   mkdir -p $FRAMEWORK_OUT
 
                   if [ "${{ matrix.platform }}" = "ios" ]; then
