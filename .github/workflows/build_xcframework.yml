@@ -75,4 +75,6 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: opencv-latest
+          name: OpenCV XCFramework
           files: opencv2.xcframework.zip
