@@ -95,11 +95,7 @@ jobs:
 
             - name: Create XCFramework
               run: |
-                  xcodebuild -create-xcframework \
-                    -framework build/framework-ios/opencv2.framework \
-                    -framework build/framework-simulator/opencv2.framework \
-                    -framework build/framework-macos/opencv2.framework \
-                    -output opencv2.xcframework
+                  scripts/ci/bundle_xcframework.sh
 
             - name: Zip xcframework
               run: |
