@@ -1,86 +1,44 @@
 #!/bin/bash
 
+# Bundles the per-platform opencv2.framework builds (see build_*_framework.sh)
+# into a "library type" opencv2.xcframework: one static archive + headers per
+# slice. The frameworks produced by build_framework.py are static (the binary
+# is an `ar` archive) and use macOS-style deep bundles, which iOS rejects when
+# embedding. Exposing the archives directly avoids that: SPM/Cocoapods/CMake
+# link them statically into the app, with no embedding or Info.plist patching.
+
 set -eux
 
 XCFRAMEWORK=opencv2.xcframework
+STAGING=$(mktemp -d)
+trap 'rm -rf "$STAGING"' EXIT
 
-function edit_xcframework() {
-    for i in $( ls $XCFRAMEWORK ); do
-        if [ -d $XCFRAMEWORK/$i ]; then
-            echo $i
+XCODEBUILD_ARGS=()
 
-            FOLD="$XCFRAMEWORK/$i/opencv2.framework"
+# Stage one slice from a built framework.
+# The framework's Headers dir holds `core.hpp`, `core/...` etc., which clang
+# resolves as <opencv2/...> only through the framework name. A library has no
+# such namespace, so nest them under `include/opencv2/` to keep
+# `#include <opencv2/core.hpp>` working. Cocoapods requires libraries to share
+# the same name across slices, so each slice gets its own staging dir.
+function stage_slice() {
+    local platform=$1
+    # The real files live in Versions/A; the top-level entries are symlinks
+    # (or copies of them, after a round trip through upload-artifact).
+    local fw="build/framework-$platform/opencv2.framework/Versions/A"
+    local dest="$STAGING/$platform"
 
-            # without this patch, the local framework works, but not the SPM binary package containing it
-            plutil -insert CFBundleExecutable -string opencv2 ${FOLD}/Versions/A/Resources/Info.plist
+    mkdir -p "$dest/include/opencv2"
+    cp -L "$fw/opencv2" "$dest/libopencv2.a"
+    cp -RL "$fw/Headers/." "$dest/include/opencv2/"
 
-            # The resources in Versions/A are the correct ones and we move them to the root
-            cp $FOLD/Versions/A/Resources/* $FOLD/Resources
-        fi
-    done
-
+    XCODEBUILD_ARGS+=(-library "$dest/libopencv2.a" -headers "$dest/include")
 }
 
-function fix_shallow() {
-    platform=$1
-    pushd $XCFRAMEWORK/$platform/opencv2.framework
+stage_slice ios
+stage_slice simulator
+stage_slice macos
 
-    rm -rf Headers Modules opencv2 Resources
+rm -rf "$XCFRAMEWORK"
 
-    mv Versions/A/opencv2 .
-    mv Versions/A/Resources/* .
-
-    mv Versions/A/Headers .
-
-    rm -rf Versions
-    popd
-}
-
-rm -rf $XCFRAMEWORK
-
-xcodebuild -create-xcframework \
-    -framework build/framework-ios/opencv2.framework \
-    -framework build/framework-simulator/opencv2.framework \
-    -framework build/framework-macos/opencv2.framework \
-    -output $XCFRAMEWORK
-
-edit_xcframework
-fix_shallow ios-arm64
-fix_shallow ios-arm64_x86_64-simulator
-
-
-# The upstream xcframework is "framework type" with macOS-style deep bundles
-# in the iOS slices, which iOS rejects when embedding. The binary inside each
-# slice is already a static `ar` archive, so the framework wrapping is just
-# overhead. Build a derived "library type" xcframework that exposes the
-# static archives directly: SPM/Cocoapods link them statically into the app
-# binary (no embed, no deep-vs-shallow concern, no Info.plist patching).
-# We keep `opencv2.xcframework` untouched so cmake reads it at compile time for headers.
-OPENCV_STATIC_XCFRAMEWORK_PATH="$REPO_ROOT/$DEPENDENCIES_PATH/opencv2_static.xcframework"
-OPENCV_STATIC_STAGING=$(mktemp -d)
-
-# Cocoapods requires libraries inside an xcframework to share the same name
-# across slices, so stage each in its own slice subdir.
-mkdir -p "$OPENCV_STATIC_STAGING/ios-arm64" \
-         "$OPENCV_STATIC_STAGING/ios-sim" \
-         "$OPENCV_STATIC_STAGING/macos"
-cp "$OPENCV_XCFRAMEWORK_PATH/ios-arm64/opencv2.framework/opencv2" \
-    "$OPENCV_STATIC_STAGING/ios-arm64/libopencv2.a"
-cp "$OPENCV_XCFRAMEWORK_PATH/ios-arm64_x86_64-simulator/opencv2.framework/opencv2" \
-    "$OPENCV_STATIC_STAGING/ios-sim/libopencv2.a"
-cp "$OPENCV_XCFRAMEWORK_PATH/macos-arm64_x86_64/opencv2.framework/opencv2" \
-    "$OPENCV_STATIC_STAGING/macos/libopencv2.a"
-
-rm -rf "$OPENCV_STATIC_XCFRAMEWORK_PATH"
-
-xcodebuild -create-xcframework \
-    -library "$OPENCV_STATIC_STAGING/ios-arm64/libopencv2.a" \
-    -library "$OPENCV_STATIC_STAGING/ios-sim/libopencv2.a" \
-    -library "$OPENCV_STATIC_STAGING/macos/libopencv2.a" \
-    -output "$OPENCV_STATIC_XCFRAMEWORK_PATH" >/dev/null
-
-rm -rf "$OPENCV_STATIC_STAGING"
-
-
-
-
+xcodebuild -create-xcframework "${XCODEBUILD_ARGS[@]}" -output "$XCFRAMEWORK"
