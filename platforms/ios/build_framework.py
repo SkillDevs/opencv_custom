@@ -265,7 +265,14 @@ class Builder:
         toolchain = self.getToolchain(arch, target)
         cmakecmd = self.getCMakeArgs(arch, target) + \
             (["-DCMAKE_TOOLCHAIN_FILE=%s" % toolchain] if toolchain is not None else [])
-        if target.lower().startswith("iphoneos") or target.lower().startswith("xros"):
+        if target.lower().startswith("iphoneos") and arch == "arm64":
+            # Don't use DETECT here: CMake try_compile checks don't get IPHONEOS_DEPLOYMENT_TARGET
+            # (it is only passed to xcodebuild), so with recent Xcode they target the SDK's default
+            # iOS version and NEON_FP16 is wrongly detected as baseline. The real build
+            # (e.g. -target arm64-apple-ios15.0) lacks 'fullfp16' and fails. A9/A10 devices
+            # (still supported by iOS 15/16) have no FP16 arithmetic, so keep NEON_FP16 dispatched.
+            cmakecmd.append("-DCPU_BASELINE=NEON,FP16")
+        elif target.lower().startswith("iphoneos") or target.lower().startswith("xros"):
             cmakecmd.append("-DCPU_BASELINE=DETECT")
         if target.lower().startswith("iphonesimulator") or target.lower().startswith("xrsimulator"):
             build_arch = check_output(["uname", "-m"]).decode('utf-8').rstrip()
