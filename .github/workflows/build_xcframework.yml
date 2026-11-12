@@ -21,7 +21,7 @@ jobs:
               run: ./scripts/ci/_prepare_build.sh
 
             - name: Upload contrib
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                   name: opencv_contrib
                   path: opencv_contrib-${{ env.OPENCV_VERSION }}
@@ -38,7 +38,7 @@ jobs:
 
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
 
             - name: Show Xcode version
               run: xcodebuild -version
@@ -47,7 +47,7 @@ jobs:
               run: xcodebuild -showsdks
 
             - name: Download contrib
-              uses: actions/download-artifact@v4
+              uses: actions/download-artifact@v8
               with:
                   name: opencv_contrib
                   path: opencv_contrib
@@ -76,7 +76,7 @@ jobs:
                   fi
 
             - name: Upload framework
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                   name: framework-${{ matrix.platform }}
                   path: build/${{ matrix.platform }}
@@ -86,10 +86,10 @@ jobs:
         needs: build
 
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
 
             - name: Download all artifacts
-              uses: actions/download-artifact@v4
+              uses: actions/download-artifact@v8
               with:
                   path: build
 
@@ -102,7 +102,7 @@ jobs:
                   zip -q -r opencv2_xcframework.zip opencv2.xcframework
 
             - name: Create Release
-              uses: softprops/action-gh-release@v2
+              uses: softprops/action-gh-release@v3
               with:
                   tag_name: opencv-${{ env.OPENCV_VERSION }}
                   name: OpenCV XCFramework
